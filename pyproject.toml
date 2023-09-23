@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "squeezer"
+version = "0.1.0"
+description = "Parsers for Sell the Trend content."
+authors = ["None"]
+readme = "README.md"
+packages = [{include = "squeezer"}]
+include = ["squeezer/*"]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+click = "^8.1.7"
+pandas = "^2.1.1"
+beautifulsoup4 = "^4.12.2"
+loguru = "^0.7.2"
+
+[tool.poetry.group.dev.dependencies]
+jupyterlab = "^4.0.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+squeezer = "squeezer.__main__:_main"
