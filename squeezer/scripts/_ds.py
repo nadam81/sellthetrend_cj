@@ -30,10 +30,29 @@ def parse_drop_shipping(html: str) -> None:
     # Parse
     prods = soup.find_all("div", class_="product-list-box__content")
 
-    with open("out.csv", "w") as fp:
-        for prod in prods:
-            prod_info = [x.strip() for x in str(prod).split("\n") if "<" not in x]
+    info = []
+    for prod in prods:
+        prod_info = [x.strip() for x in str(prod).split("\n") if "<" not in x]
+        prod_info = ",".join(prod_info)
+        info.append(prod_info)
+    
+    logger.info("Num rows: {}", len(info))
 
-            logger.info("Item: {}", prod_info[0])
-            prod_info = ",".join(prod_info)
+    i = 0
+    out = []
+    while i < len(info):
+        row = info[i]
+        next_row = info[i+1]
+
+        logger.info("Iteration {}\n  {}\n  {}", i, row, next_row)
+
+        if row[0] != next_row[0]:
+            logger.error("Row misatch")
+
+        out.append(",".join([row, next_row]))
+
+        i = i + 2
+
+    with open("out.csv", "w") as fp:
+        for prod_info in out:
             fp.write(f"{prod_info}\n")
