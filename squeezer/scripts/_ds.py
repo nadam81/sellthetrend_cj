@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from pathlib import Path
 
 import click
@@ -9,7 +10,8 @@ from squeezer import DATADIR
 
 @click.command("drop-shipping")
 @click.option("--html", help="Input HTML file.", type=Path, required=True)
-def parse_drop_shipping(html: str) -> None:
+@click.option("--date", help="Date in YYYY-MM-DD format.", type=str, required=True)
+def parse_drop_shipping(html: str, date: str) -> None:
     
     html_path = DATADIR / html
 
@@ -28,31 +30,61 @@ def parse_drop_shipping(html: str) -> None:
         file.write(soup.prettify())
 
     # Parse
-    prods = soup.find_all("div", class_="product-list-box__content")
-
-    info = []
-    for prod in prods:
-        prod_info = [x.strip() for x in str(prod).split("\n") if "<" not in x]
-        prod_info = ",".join(prod_info)
-        info.append(prod_info)
+    all_content = []
+    for prod in soup.find_all("div", class_="product-list-box__content"):
+        content = [x.strip() for x in str(prod).split("\n") if "<" not in x]
+        all_content.append(content)
     
-    logger.info("Num rows: {}", len(info))
+    logger.info("Num rows: {}", len(all_content))
 
-    i = 0
-    out = []
-    while i < len(info):
-        row = info[i]
-        next_row = info[i+1]
+    # Each product takes two rows in the all_content array
+    # The first row is useful, the second one not
+    # Let's get rid of the second row
+    all_content = all_content[0::2]
 
-        logger.info("Iteration {}\n  {}\n  {}", i, row, next_row)
+    logger.info("Num products: {}", len(all_content))
 
-        if row[0] != next_row[0]:
-            logger.error("Row misatch")
+    with open("raw.csv", "w") as fp:
+        for prod_info in all_content:
+            fp.write(f"{prod_info}\n")
 
-        out.append(",".join([row, next_row]))
-
-        i = i + 2
+    cards = []
+    for x in all_content:
+        card = ProductCard(
+            name=x[0].replace("&amp;", ""),
+            reviews=x[1].replace("Reviews: ", ""),
+            price=x[7].replace("$", ""),
+            daily_inc_percent=x[11].replace("+", ""),
+            daily_inc_value=x[12].replace(" Lists", "").replace("+", ""),
+            total_lists=x[15].replace(" Lists", "").replace("+", "")
+        )
+        cards.append(card)
 
     with open("out.csv", "w") as fp:
-        for prod_info in out:
-            fp.write(f"{prod_info}\n")
+        fp.write("name;reviews;price;daily_inc_percent;daily_inc_value;total_lists;date\n")
+        for card in cards:
+            fp.write(f"{card.to_csv()};{date}\n")
+
+    logger.info("Saved results in out.csv")
+
+
+@dataclass
+class ProductCard:
+    name: str
+    reviews: str
+    price: str
+    daily_inc_percent: str
+    daily_inc_value: str
+    total_lists: str
+
+    def to_csv(self):
+        return ";".join(
+            [
+                self.name,
+                self.reviews,
+                self.price,
+                self.daily_inc_percent,
+                self.daily_inc_value,
+                self.total_lists
+            ]
+        )

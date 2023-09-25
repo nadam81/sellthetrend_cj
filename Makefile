@@ -7,7 +7,7 @@ clean:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
 	find . -name '.ipynb_checkpoints' -exec rm -fr {} +
-	rm -rf out.csv
+	rm -rf out.csv raw.csv
 	find . -name '*_pretty.html' -exec rm -f {} +
 
 jupyter:
